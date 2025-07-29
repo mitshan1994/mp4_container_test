@@ -1,0 +1,13 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "mp4_box_read.exe (src\\mp4_box_read.exe)",
+      "name": "mp4_box_read.exe (src\\mp4_box_read.exe)",
+      "currentDir": "${workspaceRoot}/bin"
+    }
+  ]
+}
