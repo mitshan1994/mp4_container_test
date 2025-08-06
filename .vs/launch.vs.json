@@ -5,9 +5,16 @@
     {
       "type": "default",
       "project": "CMakeLists.txt",
-      "projectTarget": "mp4_box_read.exe (src\\mp4_box_read.exe)",
-      "name": "mp4_box_read.exe (src\\mp4_box_read.exe)",
-      "currentDir": "${workspaceRoot}/bin"
+      "projectTarget": "mp4_data_extract.exe (src\\mp4_data_extract.exe)",
+      "name": "mp4_data_extract.exe (src\\mp4_data_extract.exe)",
+      "currentDir": "${workspaceRoot}/bin",
+      "args": [
+        //"G:/demo_video_audio/sample_1280x720_surfing_with_audio.mp4",
+        "G:/demo_video_audio/wuzhi_zhuansheng_s213_hevc_aac.mp4",
+        //"I:/迅雷下载/机动部队.PTU.2003.BD1080p.国粤双语中字.mp4", // tested.
+        //"I:/迅雷下载/[www.domp4.cc]楚门的世界.1998.BD1080p.国英双语.中英双字.mp4", // tested.
+        //"\"I:/迅雷下载/无职转生2/[Sakurato] Mushoku Tensei S2  [01][AVC-8bit 1080P AAC][CHS].mp4\"", // tested
+      ]
     }
   ]
 }
