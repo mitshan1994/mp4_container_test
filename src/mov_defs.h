@@ -82,6 +82,16 @@ typedef struct tag_track {
     uint64_t *chunk_offsets;
     uint32_t chunk_offset_count;
 
+    // tfhd
+    uint64_t cur_frag_offset;
+    uint32_t cur_frag_default_sample_size;
+
+    // trun
+    uint32_t *trun_sample_sizes;
+    uint64_t *trun_sample_offsets;
+    uint32_t trun_sample_count;
+    uint32_t trun_sample_capacity;
+
 } mov_track_t;
 
 typedef struct tag_mov_context {
@@ -96,6 +106,9 @@ typedef struct tag_mov_context {
     mov_track_t *tracks;        // Since track id starts from 1, there could be empty track.
     int track_count;
     mov_track_t *cur_track;     // During parsing, points to current track.
+
+    // moof parsing.
+    uint64_t cur_moof_offset;   // Offset of the current moof box.
 } mov_ctx_t;
 
 typedef struct tag_mov_box_handler

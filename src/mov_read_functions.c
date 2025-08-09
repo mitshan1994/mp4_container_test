@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static mov_track_t *get_track_by_id(mov_ctx_t *ctx, uint32_t trackid);
+
 // Read integer in network byte order.
 static uint32_t read_int8(mov_ctx_t *ctx);
 static uint32_t read_int16(mov_ctx_t *ctx);
@@ -41,6 +43,13 @@ static int parse_stsc_box(mov_ctx_t *ctx, mov_atom_t atom);
 static int parse_stsz_box(mov_ctx_t *ctx, mov_atom_t atom);
 static int parse_stco_box(mov_ctx_t *ctx, mov_atom_t atom);
 
+static int parse_moof_box(mov_ctx_t *ctx, mov_atom_t atom);
+static int parse_mfhd_box(mov_ctx_t *ctx, mov_atom_t atom);
+static int parse_traf_box(mov_ctx_t *ctx, mov_atom_t atom);
+static int parse_tfhd_box(mov_ctx_t *ctx, mov_atom_t atom);
+static int parse_tfdt_box(mov_ctx_t *ctx, mov_atom_t atom);
+static int parse_trun_box(mov_ctx_t *ctx, mov_atom_t atom);
+
 static int parse_avcC_box(mov_ctx_t *ctx, mov_atom_t atom);  // avc
 static int parse_hvcC_box(mov_ctx_t *ctx, mov_atom_t atom);  // hevc
 static int parse_esds_box(mov_ctx_t *ctx, mov_atom_t atom);  // mp4a (aac)
@@ -63,6 +72,13 @@ static const mov_box_handler_t mov_box_handlers[] = {
     { MOV_BOX_TYPE('s','t','s','z'), parse_stsz_box },
     { MOV_BOX_TYPE('s','t','c','o'), parse_stco_box },
     { MOV_BOX_TYPE('c','o','6','4'), parse_stco_box },
+
+    { MOV_BOX_TYPE('m','o','o','f'), parse_moof_box },
+    { MOV_BOX_TYPE('m','f','h','d'), parse_mfhd_box },
+    { MOV_BOX_TYPE('t','r','a','f'), parse_traf_box },
+    { MOV_BOX_TYPE('t','f','h','d'), parse_tfhd_box },
+    { MOV_BOX_TYPE('t','f','d','t'), parse_tfdt_box },
+    { MOV_BOX_TYPE('t','r','u','n'), parse_trun_box },
 
     { 0, NULL }  // end
 };
@@ -107,6 +123,16 @@ int parse_mov_file(const char *filename, mov_ctx_t *ctx)
     }
 
     return 0;
+}
+
+static mov_track_t *get_track_by_id(mov_ctx_t *ctx, uint32_t trackid)
+{
+    for (int i = 0; i != ctx->track_count; ++i) {
+        if (ctx->tracks[i].trackid == trackid) {
+            return &ctx->tracks[i];
+        }
+    }
+    return NULL;
 }
 
 static uint32_t read_box_type(mov_ctx_t *ctx)
@@ -723,6 +749,210 @@ static int parse_stco_box(mov_ctx_t *ctx, mov_atom_t atom)
     for (int i = 0; i != entry_count && i < 10; ++i) {
         printf("  %d, offset: %llu\n", i, cur_track->chunk_offsets[i]);
     }
+
+    return 0;
+}
+
+static int parse_moof_box(mov_ctx_t *ctx, mov_atom_t atom)
+{
+    ctx->cur_moof_offset = _ftelli64(ctx->f) - 8;  // Normal atom header is assumed.
+    return parse_sub_boxes(ctx, atom);
+}
+
+static int parse_mfhd_box(mov_ctx_t *ctx, mov_atom_t atom)
+{
+    read_int8(ctx);     // version
+    read_int24(ctx);    // flags
+
+    uint32_t seq_number = read_int32(ctx);
+    printf("  sequence number: %u\n", seq_number);
+
+    return 0;
+}
+
+static int parse_traf_box(mov_ctx_t *ctx, mov_atom_t atom)
+{
+    return parse_sub_boxes(ctx, atom);
+}
+
+static int parse_tfhd_box(mov_ctx_t *ctx, mov_atom_t atom)
+{
+    uint64_t data_offset = ctx->cur_moof_offset;
+
+    read_int8(ctx);     // version
+    int tf_flags = read_int24(ctx);    // flags
+
+    uint32_t trackid = read_int32(ctx);
+    uint64_t base_data_offset;
+    uint32_t sample_desc_index;
+    uint32_t default_sample_duration;
+    uint32_t default_sample_size;
+    uint32_t default_sample_flags;
+
+    if (tf_flags & 0x000001) {
+        base_data_offset = read_int64(ctx);
+        data_offset = base_data_offset;
+    } else {
+        base_data_offset = 0;
+        printf("  base_offset is not present.\n");
+    }
+
+    if (tf_flags & 0x000002) {
+        sample_desc_index = read_int32(ctx);
+        printf("  sample_desc_index is: %u\n", sample_desc_index);
+    } else {
+        sample_desc_index = 0;
+        printf("  sample_desc_index is not present\n");
+    }
+
+    if (tf_flags & 0x000008) {
+        default_sample_duration = read_int32(ctx);
+        printf("  default_sample_duration is %u\n", default_sample_duration);
+    } else {
+        default_sample_duration = 0;
+        printf("  default_sample_duration is not present\n");
+    }
+
+    if (tf_flags & 0x000010) {
+        default_sample_size = read_int32(ctx);
+        printf("  default_sample_size is %u\n", default_sample_size);
+    } else {
+        default_sample_size = 0;
+        printf("  default_sample_size is not present\n");
+    }
+
+    if (tf_flags & 0x000020) {
+        default_sample_flags = read_int32(ctx);
+        printf("  default_sample_flags is %u\n", default_sample_flags);
+    } else {
+        default_sample_flags = 0;
+        printf("  default_sample_flags is not present\n");
+    }
+
+    printf("  base_data_offset: %llu\n", base_data_offset);
+
+    mov_track_t *cur_track = get_track_by_id(ctx, trackid);
+    if (cur_track && cur_track->is_video) {
+        printf("  (video track)\n");
+    } else if (cur_track && cur_track->is_audio) {
+        printf("  (audio track)\n");
+    }
+
+    // Update "current track" for later process inside traf.
+    ctx->cur_track = cur_track;
+
+    cur_track->cur_frag_offset = data_offset;
+    cur_track->cur_frag_default_sample_size = default_sample_size;
+
+    return 0;
+}
+
+static int parse_tfdt_box(mov_ctx_t *ctx, mov_atom_t atom)
+{
+    uint8_t version = read_int8(ctx);
+    read_int24(ctx);
+
+    uint64_t base_decode_time;
+    if (1 == version) {
+        base_decode_time = read_int64(ctx);
+    } else {
+        base_decode_time = read_int32(ctx);
+    }
+
+    printf("  base media decode time: %llu\n", base_decode_time);
+
+    return 0;
+}
+
+static int parse_trun_box(mov_ctx_t *ctx, mov_atom_t atom)
+{
+    mov_track_t *cur_track = ctx->cur_track;
+
+    uint8_t version = read_int8(ctx);
+    uint32_t tr_flags = read_int24(ctx);
+
+    uint32_t sample_count = read_int32(ctx);
+    int32_t data_offset;
+    uint32_t first_sample_flags;
+    if (tr_flags & 0x000001) {
+        data_offset = read_int32(ctx) + cur_track->cur_frag_offset;
+    } else {
+        data_offset = cur_track->cur_frag_offset;
+        printf("  data_offset is not present\n");
+    }
+
+    if (tr_flags & 0x000004) {
+        first_sample_flags = read_int32(ctx);
+    } else {
+        printf("  first_sample_flags is not present\n");
+    }
+
+    int have_duration = 0;
+    int have_size = 0;
+    int have_flags = 0;
+    int have_ct_offset = 0;
+    if (tr_flags & 0x000100) {
+        have_duration = 1;
+    } else {
+        printf("  sample_duration is not present\n");
+    }
+    if (tr_flags & 0x000200) {
+        have_size = 1;
+    } else {
+        printf("  sample_size is not present\n");
+    }
+    if (tr_flags & 0x000400) {
+        have_flags = 1;
+    } else {
+        printf("  sample_flags is not present\n");
+    }
+    if (tr_flags & 0x000800) {
+        have_ct_offset = 1;
+    } else {
+        printf("  sample_composition_time_offset is not present\n");
+    }
+
+    // Allocate for new samples.
+    if (cur_track->trun_sample_capacity == 0) {
+        cur_track->trun_sample_sizes = calloc(sample_count, sizeof(uint32_t));
+        cur_track->trun_sample_offsets = calloc(sample_count, sizeof(uint64_t));
+        cur_track->trun_sample_capacity = sample_count;
+    } else {
+        uint32_t suitable_capacity = cur_track->trun_sample_capacity;
+        while (suitable_capacity < cur_track->trun_sample_count + sample_count) {
+            suitable_capacity = 2 * suitable_capacity;
+        }
+        if (suitable_capacity != cur_track->trun_sample_capacity) {
+            cur_track->trun_sample_sizes =
+                realloc(cur_track->trun_sample_sizes, suitable_capacity * sizeof(uint32_t));
+            cur_track->trun_sample_offsets =
+                realloc(cur_track->trun_sample_offsets, suitable_capacity * sizeof(uint64_t));
+            cur_track->trun_sample_capacity = suitable_capacity;
+        }
+    }
+
+    uint32_t sample_duration;
+    uint32_t sample_size;
+    uint32_t sample_flags;
+    uint32_t sample_composition_time_offset;
+    uint64_t cur_sample_offset = data_offset;
+    for (int i = 0; i != sample_count; ++i) {
+        if (have_duration) sample_duration = read_int32(ctx);
+        if (have_size) {
+            sample_size = read_int32(ctx);
+        } else {
+            sample_size = cur_track->cur_frag_default_sample_size;
+        }
+        if (have_flags) sample_flags = read_int32(ctx);
+        if (have_ct_offset) sample_composition_time_offset = read_int32(ctx);
+
+        cur_track->trun_sample_sizes[cur_track->trun_sample_count] = sample_size;
+        cur_track->trun_sample_offsets[cur_track->trun_sample_count] = cur_sample_offset;
+
+        cur_track->trun_sample_count++;
+        cur_sample_offset += sample_size;
+    }
+    printf("  sample count: %u\n", sample_count);
 
     return 0;
 }
