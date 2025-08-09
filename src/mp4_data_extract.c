@@ -195,6 +195,43 @@ static int aac_process_sample(uint8_t *buffer, uint32_t sample_len, uint32_t fre
     return 0;
 }
 
+static void extract_raw_from_fmp4(mov_ctx_t *ctx, mov_track_t *cur_track, FILE *f)
+{
+    int ret;
+
+    int is_avc = strncmp(cur_track->codec_format, "avc1", 4) == 0;
+    int is_hevc = strncmp(cur_track->codec_format, "hvc1", 4) == 0;
+    int is_aac = strncmp(cur_track->codec_format, "mp4a", 4) == 0;
+
+    printf("extract_raw_from_fmp4 start\n");
+
+    for (size_t i = 0; i != cur_track->trun_sample_count; ++i) {
+        uint64_t offset = cur_track->trun_sample_offsets[i];
+        uint32_t length = cur_track->trun_sample_sizes[i];
+
+        _fseeki64(ctx->f, offset, SEEK_SET);
+        ret = fread(buffer, length, 1, ctx->f);
+        if (ret != 1) {
+            printf("failed to read %u data at offset %llu\n", length, offset);
+            break;
+        }
+
+        if (is_avc || is_hevc) {
+            ret = h26x_process_sample(buffer, length, f);
+        } else if (is_aac) {
+            ret = aac_process_sample(buffer, length, cur_track->audio_sample_rate,
+                cur_track->channel_count, f);
+        }
+
+        if (ret != 0) {
+            printf("process sample failed\n");
+            break;
+        }
+    }
+
+    printf("extract_raw_from_fmp4 end\n");
+}
+
 static void extract_raw_data(mov_ctx_t *ctx, mov_track_t *cur_track, FILE *f)
 {
     int ret;
@@ -234,7 +271,10 @@ static void extract_raw_data(mov_ctx_t *ctx, mov_track_t *cur_track, FILE *f)
 
     // Check sample to chunk data.
     if (cur_track->stsc_count == 0) {
-        printf("No sample chunk data\n");
+        printf("No sample chunk data.\n");
+        if (cur_track->trun_sample_count > 0) {
+            extract_raw_from_fmp4(ctx, cur_track, f);
+        }
         return;
     }
 
