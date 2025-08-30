@@ -9,11 +9,67 @@
       "name": "mp4_data_extract.exe (src\\mp4_data_extract.exe)",
       "currentDir": "${workspaceRoot}/bin",
       "args": [
-        //"G:/demo_video_audio/sample_1280x720_surfing_with_audio.mp4",
+        "G:/demo_video_audio/sample_1280x720_surfing_with_audio.mp4"
+      ],
+      "comments": [
+        "G:/demo_video_audio/sample_1280x720_surfing_with_audio.mp4",
         "G:/demo_video_audio/wuzhi_zhuansheng_s213_hevc_aac.mp4",
-        //"I:/迅雷下载/机动部队.PTU.2003.BD1080p.国粤双语中字.mp4", // tested.
-        //"I:/迅雷下载/[www.domp4.cc]楚门的世界.1998.BD1080p.国英双语.中英双字.mp4", // tested.
-        //"\"I:/迅雷下载/无职转生2/[Sakurato] Mushoku Tensei S2  [01][AVC-8bit 1080P AAC][CHS].mp4\"", // tested
+        "I:/迅雷下载/机动部队.PTU.2003.BD1080p.国粤双语中字.mp4",
+        "I:/迅雷下载/[www.domp4.cc]楚门的世界.1998.BD1080p.国英双语.中英双字.mp4",
+        "\"I:/迅雷下载/无职转生2/[Sakurato] Mushoku Tensei S2  [01][AVC-8bit 1080P AAC][CHS].mp4\"",
+        "G:/demo_video_audio/Audio_25fps_h264_2ch_64kbps_ac4_fragmented.mp4",
+        "G:/demo_video_audio/frag_sample_1280x720_surfing_with_audio.mp4"
+      ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "mpeg_ts_parse.exe (src\\mpeg_ts_parse.exe)",
+      "name": "mpeg_ts_parse.exe (src\\mpeg_ts_parse.exe)",
+      "currentDir": "${workspaceRoot}/bin",
+      "args": [
+        "ps",
+        "G:/demo_video_audio/ps_sample_1280x720_surfing_with_audio.dvd"
+      ],
+      "backup_args": [
+        "ts",
+        "G:/demo_video_audio/ts_sample_1280x720_surfing_with_audio.ts"
+      ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "mkv_parse.exe (src\\mkv_parse.exe)",
+      "name": "mkv_parse.exe (src\\mkv_parse.exe)",
+      "currentDir": "${workspaceRoot}/bin",
+      "args": [
+        "G:/demo_video_audio/mkv_sample_1280x720_surfing_with_audio.mkv"
+      ],
+      "args_backup": [
+        "G:/demo_video_audio/mkv_sample_1280x720_surfing_with_audio.mkv",
+        "I:/迅雷下载/狮子王.The.Lion.King.1994.BD1080P.mkv"
+      ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "flv_parse.exe (src\\flv_parse.exe)",
+      "name": "flv_parse.exe (src\\flv_parse.exe)",
+      "currentDir": "${workspaceRoot}/bin",
+      "args": [
+        "G:/demo_video_audio/flv_sample_1280x720_surfing_with_audio.flv"
+      ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "rtmp_client_test.exe (src\\rtmp_client_test.exe)",
+      "name": "rtmp_client_test.exe (src\\rtmp_client_test.exe)",
+      "currentDir": "${workspaceRoot}/bin",
+      "args": [
+        "127.0.0.1",
+        "11935",
+        "live/test"
       ]
     }
   ]
